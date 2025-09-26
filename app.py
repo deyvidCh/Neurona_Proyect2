@@ -39,6 +39,14 @@ model = SentenceTransformer(MODEL_NAME, cache_folder=MODEL_CACHE)
 def embed(texts: list[str]) -> np.ndarray:
     return model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
 
+@app.get("/health")
+def health():
+    return {"ok": True, "vectors": int(index.ntotal)}
+
+@app.get("/version")
+def version():
+    return {"app": "neurona-pfsense", "version": "1.0"}
+
 @app.get("/")
 def root():
     return {"status": "ok", "msg": "Neurona pfSense lista. Usa POST /query"}
