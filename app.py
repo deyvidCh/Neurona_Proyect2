@@ -49,7 +49,46 @@ INDEX_PATH  = os.path.join(INDEX_DIR, "faiss.index")
 NPY_META    = os.path.join(INDEX_DIR, "meta.npy")
 MODEL_NAME  = "sentence-transformers/all-MiniLM-L6-v2"
 MODEL_CACHE = "models"  # cache local del modelo HF
-SIMILARITY_THRESHOLD = float(os.environ.get("SIMILARITY_THRESHOLD", "0.35"))
+# Umbral de similitud (ajustable por env)
+SIMILARITY_THRESHOLD = float(os.environ.get("SIMILARITY_THRESHOLD", "0.55"))  # subimos a 0.55
+
+# Tokenizado simple para revisar si la pregunta aparece en el dataset
+STOPWORDS = {
+    "como", "configuraste", "configuraron", "configurar", "para", "que", "de", "del", "la", "el", "los", "las",
+    "un", "una", "en", "y", "o", "se", "al", "lo", "por", "con", "sin", "sobre", "a", "mi", "tu", "su",
+    "pfSense", "pfsense", "squid", "proxy", "bloqueo", "permitir", "permitido", "bloquear", "regla", "alias"
+}
+MIN_TOKEN_LEN = 4  # ignora tokens muy cortos tipo "de", "la"
+
+COLUMNS_TO_SEARCH = ["regla", "accion", "observacion", "paso_a_paso", "evidencia"]
+
+def _norm(s: str) -> str:
+    return (s or "").strip().lower()
+
+def extract_significant_tokens(text: str) -> list[str]:
+    import re
+    tokens = re.findall(r"[a-zA-ZáéíóúñÁÉÍÓÚÑ0-9_.-]+", text or "")
+    toks = []
+    for t in tokens:
+        tl = t.lower()
+        if len(tl) >= MIN_TOKEN_LEN and tl not in STOPWORDS:
+            toks.append(tl)
+    return toks
+
+def dataset_contains_any(tokens: list[str]) -> bool:
+    """Devuelve True si al menos un token aparece en alguna columna del dataset."""
+    if not tokens:
+        return True
+    cols = [c for c in COLUMNS_TO_SEARCH if c in df.columns]
+    if not cols:
+        return True
+    for c in cols:
+        serie = df[c].astype(str).str.lower()
+        for tok in tokens:
+            if serie.str.contains(tok, regex=False).any():
+                return True
+    return False
+
 
 # === FastAPI ===
 app = FastAPI(title="Neurona pfSense", version="1.0")
@@ -122,7 +161,7 @@ def query(q: QueryIn):
     ids_row = [i for i in ids[0] if i != -1]
     scores_row = scores[0][:len(ids_row)]
     
-    # 1) Si no hay vecinos, mensaje claro
+    # 1) Si FAISS no retorna vecinos
     if not ids_row:
         return QueryOut(
             respuesta=f"No hay evidencia en el dataset para: “{q.pregunta}”. "
@@ -130,11 +169,25 @@ def query(q: QueryIn):
             hits=[]
         )
     
-    # 2) Candado por servicio explícito (si pregunta dice 'instagram' pero dataset no lo tiene)
-    svc = detect_service(q.pregunta)
-    if svc and not dataset_has_service(svc):
+    # 2) Si la pregunta menciona tokens significativos que NO existen en el dataset
+    tokens = extract_significant_tokens(q.pregunta)
+    if not dataset_contains_any(tokens):
+        # Ej.: “Samsung” no aparece en tus registros → devolvemos no configurado
+        not_found = ", ".join(tokens)
         return QueryOut(
-            respuesta=f"“{svc}” no se configuró en este proyecto (sin evidencia en el dataset).",
+            respuesta=f"No se encontró evidencia en el dataset sobre: {not_found}. "
+                      f"Posiblemente ese tema no se configuró en el proyecto.",
+            hits=[]
+        )
+    
+    # 3) Umbral de similitud: aún con vecinos, si el top score es bajo → no relevante
+    top_score = float(scores_row[0]) if len(scores_row) else 0.0
+    if top_score < SIMILARITY_THRESHOLD:
+        return QueryOut(
+            respuesta=(
+                f"No se encontró una configuración relevante para: “{q.pregunta}”. "
+                f"(score={top_score:.3f} < umbral={SIMILARITY_THRESHOLD:.2f})"
+            ),
             hits=[]
         )
     
