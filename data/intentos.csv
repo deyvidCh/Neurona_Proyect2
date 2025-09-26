@@ -1,34 +1,34 @@
-﻿Intento,Acción,Resultado,Explicación
-1,Preparar host y VMs: instalar VMware Player y crear VM pfSense,Exitoso,Se creó VM pfSense y VM cliente; hubo que activar VT-x en BIOS y ajustar adaptadores.
-2,Configurar redes virtuales (VMnet8 NAT y VMnet1 Host-Only),Exitoso,Host-only quedó en 192.168.74.0/24 inicialmente; luego se cambió a 192.168.1.0/24 o se adaptó pfSense según el caso.
-3,Instalar pfSense desde ISO y asignar interfaces (WAN y LAN),Exitoso,pfSense instalado; WAN recibió IP del NAT (ej. 192.168.180.120) y LAN quedó 192.168.1.1.
-4,Cliente no obtenía DNS correcto,Fallido,Cliente recibió DNS 192.168.1.254 (inválido); no resolvía nombres -> no navegación.
-5,Cambiar DNS en DHCP de pfSense a 8.8.8.8 y 1.1.1.1,Exitoso,Cliente renovó IP y pudo resolver google.com; navegación básica OK.
-6,Acceso WebGUI fallaba por HTTPS (timeout),Fallo parcial,El webConfigurator no respondía en 443; se accedió por HTTP y reiniciaron servicios.
-7,Habilitar WebGUI y configurar zona horaria y credenciales,Exitoso,Cambio de contraseña admin y configuración base (America/Guatemala).
-8,Instalar Squid y SquidGuard (paquetes),Exitoso,Paquetes instalados; versión antigua de Squid (0.4.46) mostraba limitaciones en SSL.
-9,Configurar Squid en modo transparente y probar bloqueo HTTP,Exitoso,"Bloqueo de dominios HTTP funcionó (sitios no-HTTPS), pero YouTube (HTTPS) no se bloqueaba."
-10,Intentar bloquear youtube.com en Domain List de SquidGuard,Fallido,Campo Domain List concatenaba dominios (bug); no aceptaba más de 2 entradas; bloqueo no efectivo.
-11,Probar bloqueo por IP fijo (host) para facebook.es,Exitoso parcial,facebook.es bloqueó porque resolvió a una IP en la lista; facebook.com seguía accesible por otras IPs.
-12,Crear Firewall Alias con algunas IPs de Facebook (hosts únicos),Fallido parcial,Bloquear IPs individuales no cubre todo Meta; facebook.com siguió entrando por IPs no listadas.
-13,Crear Firewall Alias con rangos CIDR de Meta (AS32934),Exitoso parcial,"Se añadieron múltiples subnets (ej. 157.240.0.0/16, 31.13.64.0/18, 185.60.216.0/22); bloqueo mejoró pero algunos servicios HTTPS seguían accesibles."
-14,Intentar bloquear YouTube por rangos de Google (CIDR) en alias,Fallido parcial,Google/YouTube usan muchos rangos; bloqueo por IP es frágil y puede afectar otros servicios Google.
-15,Intentar SSL Bump en Squid (habilitar SSL/MITM y crear CA),Exitoso parcial,"Se creó CA en pfSense; Squid mostró opción SSL Man-in-the-Middle, pero la versión de Squid requería pasos finos. Se avanzó creando CA_Squid."
-16,Exportar e instalar certificado CA_Squid en cliente Windows,Exitoso,Se instaló el CA en 'Equipo local > Entidades de certificación raíz de confianza' para evitar ERR_CERT_AUTHORITY_INVALID.
-17,Crear sgerror.php para evitar 404 de SquidGuard,Exitoso,Se creó /usr/local/www/sgerror.php en pfSense para mostrar mensaje de bloqueo en vez de 404.
-18,Probar bloqueo de YouTube con SSL Bump + SquidGuard (Domain/Expressions),Exitoso parcial,"SquidGuard interceptó conexiones (apareció 404/sgerror), pero faltaron expresiones regex y limpiar caché/HSTS en navegador."
-19,Problema: Domain List de SquidGuard no acepta más de 2 entradas (bug),Fallo,El campo concatenaba entradas; solución provisoria: usar Expressions o subir blacklist como archivo .txt.
-20,Intentar bloquear Facebook por dominio con SquidGuard (proxy transparente),Fallo parcial,"Con proxy transparente y sin CA instalada en clientes, HTTPS se saltaba o daba errores; con CA instalado, interceptación funcionó mejor."
-21,Configurar Squid en modo explícito y forzar cliente a usar proxy (192.168.1.1:3128),Exitoso,"Se desactivó modo transparente, el cliente fue configurado para usar proxy explícito; todo el tráfico HTTP(S) pasó por Squid."
-22,Crear Target Category Bloqueo_Facebook en SquidGuard (domains/expressions),Exitoso,Se definió categoría y en Common ACL se puso deny; al usar proxy explícito el bloqueo de facebook.com funcionó.
-23,Problema: acceso a pfSense GUI bloqueado por proxy,Solución aplicada,Se agregó excepción en cliente para 192.168.1.1 o whitelist en SquidGuard; restauró acceso al GUI.
-24,Prueba final Facebook bloqueado + Messenger permitido,Exitoso,"facebook.com bloqueado vía SquidGuard; Messenger habilitado agregando whitelist (messenger.com, edge-chat.messenger.com, cdn.fbsbx.com, gateway.messenger.com)."
-25,Problema Messenger sin conexión,Fallido parcial,La interfaz cargaba pero mostraba 'Sin conexión a internet'; faltaban dominios adicionales en whitelist.
-26,Agregar dominios adicionales de Messenger a whitelist,Exitoso,Messenger cargó chats y permitió enviar/recibir mensajes correctamente mientras Facebook seguía bloqueado.
-27,Probar bloqueo de WhatsApp por puertos 5222–5223 y 5228,Fallido parcial,Interfaz de WhatsApp no cargaba completamente; se congelaba en pantalla inicial.
-28,Permitir web.whatsapp.com y bloquear solo puertos de mensajería,Fallido,WhatsApp Web cargaba pero aún enviaba mensajes porque usa HTTPS 443 además de 5222/5228.
-29,Crear alias de dominios de mensajería WhatsApp y bloquearlos en firewall,Fallo parcial,"Se añadieron mmg.whatsapp.net, static.whatsapp.net, media.xx.fbcdn.net, edge-mqtt.facebook.com, graph.whatsapp.net; algunos mensajes seguían pasando por CDNs."
-30,"Intentar bloqueo por rangos de IP Meta (31.13.64.0/18, 157.240.0.0/16, 185.60.216.0/22)",Fallo parcial,Bloqueo afectaba parte de WhatsApp pero otros rangos seguían permitiendo entrega de mensajes.
-31,Instalar pfBlockerNG y crear DNSBL WhatsApp_Block,Exitoso parcial,Se añadieron whatsapp.net y fbcdn.net como dominios base en DNSBL; WhatsApp Web cargó pero mensajes se quedaron colgados en algunos intentos.
-32,Validar bloqueo con nslookup y revisar DNSBL.log,Exitoso,Consultas a mmg.whatsapp.net devolvieron 0.0.0.0/NXDOMAIN; confirmado que pfBlockerNG interceptó los dominios de mensajería.
-33,Prueba final WhatsApp con pfBlockerNG,Fallo parcial,La interfaz de WhatsApp Web carga pero en ciertos casos aún logra enviar mensajes; bloqueo no es 100% consistente sin SSL inspection profunda.
+regla,intento,accion,resultado,observacion,paso_a_paso,evidencia
+,1,Preparar host y VMs: instalar VMware Player y crear VM pfSense,exitoso,Se creó VM pfSense y VM cliente; hubo que activar VT-x en BIOS y ajustar adaptadores.,,
+,2,Configurar redes virtuales (VMnet8 NAT y VMnet1 Host-Only),exitoso,Host-only quedó en 192.168.74.0/24 inicialmente; luego se cambió a 192.168.1.0/24 o se adaptó pfSense según el caso.,,
+,3,Instalar pfSense desde ISO y asignar interfaces (WAN y LAN),exitoso,pfSense instalado; WAN recibió IP del NAT (ej. 192.168.180.120) y LAN quedó 192.168.1.1.,,
+,4,Cliente no obtenía DNS correcto,falló,Cliente recibió DNS 192.168.1.254 (inválido); no resolvía nombres -> no navegación.,,
+,5,Cambiar DNS en DHCP de pfSense a 8.8.8.8 y 1.1.1.1,exitoso,Cliente renovó IP y pudo resolver google.com; navegación básica OK.,,
+,6,Acceso WebGUI fallaba por HTTPS (timeout),falló,El webConfigurator no respondía en 443; se accedió por HTTP y reiniciaron servicios.,,
+,7,Habilitar WebGUI y configurar zona horaria y credenciales,exitoso,Cambio de contraseña admin y configuración base (America/Guatemala).,,
+,8,Instalar Squid y SquidGuard (paquetes),exitoso,Paquetes instalados; versión antigua de Squid (0.4.46) mostraba limitaciones en SSL.,,
+,9,Configurar Squid en modo transparente y probar bloqueo HTTP,exitoso,"Bloqueo de dominios HTTP funcionó (sitios no-HTTPS), pero YouTube (HTTPS) no se bloqueaba.",,
+,10,Intentar bloquear youtube.com en Domain List de SquidGuard,falló,Campo Domain List concatenaba dominios (bug); no aceptaba más de 2 entradas; bloqueo no efectivo.,,
+,11,Probar bloqueo por IP fijo (host) para facebook.es,exitoso,facebook.es bloqueó porque resolvió a una IP en la lista; facebook.com seguía accesible por otras IPs.,,
+,12,Crear Firewall Alias con algunas IPs de Facebook (hosts únicos),falló,Bloquear IPs individuales no cubre todo Meta; facebook.com siguió entrando por IPs no listadas.,,
+,13,Crear Firewall Alias con rangos CIDR de Meta (AS32934),exitoso,"Se añadieron múltiples subnets (ej. 157.240.0.0/16, 31.13.64.0/18, 185.60.216.0/22); bloqueo mejoró pero algunos servicios HTTPS seguían accesibles.",,
+,14,Intentar bloquear YouTube por rangos de Google (CIDR) en alias,falló,Google/YouTube usan muchos rangos; bloqueo por IP es frágil y puede afectar otros servicios Google.,,
+,15,Intentar SSL Bump en Squid (habilitar SSL/MITM y crear CA),exitoso,"Se creó CA en pfSense; Squid mostró opción SSL Man-in-the-Middle, pero la versión de Squid requería pasos finos. Se avanzó creando CA_Squid.",,
+,16,Exportar e instalar certificado CA_Squid en cliente Windows,exitoso,Se instaló el CA en 'Equipo local > Entidades de certificación raíz de confianza' para evitar ERR_CERT_AUTHORITY_INVALID.,,
+,17,Crear sgerror.php para evitar 404 de SquidGuard,exitoso,Se creó /usr/local/www/sgerror.php en pfSense para mostrar mensaje de bloqueo en vez de 404.,,
+,18,Probar bloqueo de YouTube con SSL Bump + SquidGuard (Domain/Expressions),exitoso,"SquidGuard interceptó conexiones (apareció 404/sgerror), pero faltaron expresiones regex y limpiar caché/HSTS en navegador.",,
+,19,Problema: Domain List de SquidGuard no acepta más de 2 entradas (bug),falló,El campo concatenaba entradas; solución provisoria: usar Expressions o subir blacklist como archivo .txt.,,
+,20,Intentar bloquear Facebook por dominio con SquidGuard (proxy transparente),falló,"Con proxy transparente y sin CA instalada en clientes, HTTPS se saltaba o daba errores; con CA instalado, interceptación funcionó mejor.",,
+,21,Configurar Squid en modo explícito y forzar cliente a usar proxy (192.168.1.1:3128),exitoso,"Se desactivó modo transparente, el cliente fue configurado para usar proxy explícito; todo el tráfico HTTP(S) pasó por Squid.",,
+,22,Crear Target Category Bloqueo_Facebook en SquidGuard (domains/expressions),exitoso,Se definió categoría y en Common ACL se puso deny; al usar proxy explícito el bloqueo de facebook.com funcionó.,,
+,23,Problema: acceso a pfSense GUI bloqueado por proxy,solución aplicada,Se agregó excepción en cliente para 192.168.1.1 o whitelist en SquidGuard; restauró acceso al GUI.,,
+,24,Prueba final Facebook bloqueado + Messenger permitido,exitoso,"facebook.com bloqueado vía SquidGuard; Messenger habilitado agregando whitelist (messenger.com, edge-chat.messenger.com, cdn.fbsbx.com, gateway.messenger.com).",,
+,25,Problema Messenger sin conexión,falló,La interfaz cargaba pero mostraba 'Sin conexión a internet'; faltaban dominios adicionales en whitelist.,,
+,26,Agregar dominios adicionales de Messenger a whitelist,exitoso,Messenger cargó chats y permitió enviar/recibir mensajes correctamente mientras Facebook seguía bloqueado.,,
+,27,Probar bloqueo de WhatsApp por puertos 5222–5223 y 5228,falló,Interfaz de WhatsApp no cargaba completamente; se congelaba en pantalla inicial.,,
+,28,Permitir web.whatsapp.com y bloquear solo puertos de mensajería,falló,WhatsApp Web cargaba pero aún enviaba mensajes porque usa HTTPS 443 además de 5222/5228.,,
+,29,Crear alias de dominios de mensajería WhatsApp y bloquearlos en firewall,falló,"Se añadieron mmg.whatsapp.net, static.whatsapp.net, media.xx.fbcdn.net, edge-mqtt.facebook.com, graph.whatsapp.net; algunos mensajes seguían pasando por CDNs.",,
+,30,"Intentar bloqueo por rangos de IP Meta (31.13.64.0/18, 157.240.0.0/16, 185.60.216.0/22)",falló,Bloqueo afectaba parte de WhatsApp pero otros rangos seguían permitiendo entrega de mensajes.,,
+,31,Instalar pfBlockerNG y crear DNSBL WhatsApp_Block,exitoso,Se añadieron whatsapp.net y fbcdn.net como dominios base en DNSBL; WhatsApp Web cargó pero mensajes se quedaron colgados en algunos intentos.,,
+,32,Validar bloqueo con nslookup y revisar DNSBL.log,exitoso,Consultas a mmg.whatsapp.net devolvieron 0.0.0.0/NXDOMAIN; confirmado que pfBlockerNG interceptó los dominios de mensajería.,,
+,33,Prueba final WhatsApp con pfBlockerNG,falló,La interfaz de WhatsApp Web carga pero en ciertos casos aún logra enviar mensajes; bloqueo no es 100% consistente sin SSL inspection profunda.,,
