@@ -1,0 +1,6 @@
+@echo off
+echo [1/2] Etiquetando columna "regla"...
+python tools\label_regla.py || goto :eof
+echo [2/2] Ingestando CSV a FAISS...
+python ingest.py || goto :eof
+echo Listo.
