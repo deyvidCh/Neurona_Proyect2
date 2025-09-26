@@ -2,22 +2,29 @@ def construir_respuesta(hits):
     """
     Recibe una lista de dicts (o model_dump de Pydantic) con campos:
     regla, intento, accion, resultado, observacion, paso_a_paso, evidencia, score
-    Devuelve un string con: recomendación (intento exitoso) + aprendizajes (fallidos).
     """
-    # Intento principal: el primero exitoso; si no hay, usar el primero de la lista
-    exitosos = [h for h in hits if (h.get('resultado', '').strip().lower() == 'exitoso')]
-    principal = exitosos[0] if exitosos else (hits[0] if hits else None)
-
-    if not principal:
+    if not hits:
         return "Sin resultados."
 
-    # Resumen recomendado
+    # Intento principal: primer exitoso, si no hay usa el primero
+    exitosos = [h for h in hits if (h.get('resultado', '').strip().lower() == 'exitoso')]
+    principal = exitosos[0] if exitosos else hits[0]
+
+    regla = (principal.get('regla') or 'general').strip() or 'general'
     paso_o_accion = principal.get('paso_a_paso') or principal.get('accion', '(sin paso_a_paso)')
+
     resumen = [
-        f"✅ Configuración recomendada para **{principal.get('regla','')}** "
-        f"(basado en intento exitoso #{int(principal.get('intento', 0))}):",
-        paso_o_accion
+        f"✅ Configuración recomendada para **{regla}** (basado en intento exitoso #{int(principal.get('intento', 0))}):",
+        paso_o_accion,
+        ""
     ]
+
+    # Top 3 más similares (con score) a modo de evidencia
+    resumen.append("🔎 Resultados similares (top 3):")
+    for h in hits[:3]:
+        resumen.append(
+            f"- #{int(h.get('intento',0))} [{h.get('regla','')} | {h.get('resultado','')} | score={h.get('score',0):.3f}] → {h.get('accion','')}"
+        )
 
     # Fallidos relacionados (máx 3)
     fallidos = [
