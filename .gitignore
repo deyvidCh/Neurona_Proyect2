@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+models/
+index/*
+!index/.gitkeep
+*.npy
+.vscode/
+.DS_Store
+Thumbs.db
+.env
