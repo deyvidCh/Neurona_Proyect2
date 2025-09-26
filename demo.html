@@ -1,0 +1,17 @@
+﻿<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Neurona pfSense</title><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="font-family:system-ui;max-width:900px;margin:2rem auto;">
+  <h1>Neurona pfSense</h1>
+  <form id="f"><input id="q" style="width:70%" placeholder="¿Cómo configuraste Messenger?"><button>Consultar</button></form>
+  <pre id="out" style="background:#111;color:#eee;padding:1rem;white-space:pre-wrap;"></pre>
+<script>
+const f=document.getElementById('f'),q=document.getElementById('q'),out=document.getElementById('out');
+f.addEventListener('submit',async e=>{e.preventDefault();out.textContent='Consultando...';
+  const r=await fetch('http://127.0.0.1:8000/query',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({pregunta:q.value,k:5})});
+  const j=await r.json();
+  out.textContent=j.respuesta + "\n\n" + JSON.stringify(j.hits,null,2);
+});
+</script>
+</body></html>
