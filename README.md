@@ -9,3 +9,12 @@ python tools/label_regla.py # para rellenar la columna 'regla'
 python ingest.py
 uvicorn app:app --reload --port 8000
 Probar: POST /query con `{ "pregunta": "...", "k": 5 }`
+## Probar con Thunder Client
+- Método: POST
+- URL: http://127.0.0.1:8000/query
+- Headers: Content-Type: application/json
+- Body (JSON):
+{
+  "pregunta": "¿Cómo configuraste Messenger?",
+  "k": 5
+}
