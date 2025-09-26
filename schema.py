@@ -1,4 +1,3 @@
-@"
 from pydantic import BaseModel
 
 class QueryIn(BaseModel):
@@ -18,4 +17,3 @@ class Hit(BaseModel):
 class QueryOut(BaseModel):
     respuesta: str
     hits: list[Hit]
-"@ | Set-Content -Encoding utf8 .\schema.py
