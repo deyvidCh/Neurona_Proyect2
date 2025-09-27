@@ -56,7 +56,7 @@ SIMILARITY_THRESHOLD = float(os.environ.get("SIMILARITY_THRESHOLD", "0.55"))  # 
 STOPWORDS = {
     "como", "configuraste", "configuraron", "configurar", "para", "que", "de", "del", "la", "el", "los", "las",
     "un", "una", "en", "y", "o", "se", "al", "lo", "por", "con", "sin", "sobre", "a", "mi", "tu", "su",
-    "pfSense", "pfsense", "squid", "proxy", "bloqueo", "permitir", "permitido", "bloquear", "regla", "alias"
+    "pfSense", "pfsense", "squid", "proxy", "bloqueo", "permitir", "permitido", "bloquear", "regla", "alias","interfaz","GUI","proyecto"
 }
 MIN_TOKEN_LEN = 4  # ignora tokens muy cortos tipo "de", "la"
 
